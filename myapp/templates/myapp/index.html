@@ -1,0 +1,191 @@
+<!-- {% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Query</title>
+    <link rel="stylesheet" href="{% static 'myapp/style.css' %}">
+</head>
+<body>
+    <h1>Upload Document and Ask Questions</h1>
+    <form id="upload-form" enctype="multipart/form-data">
+        <input type="file" id="file-input" name="file">
+        <input type="text" id="query-input" placeholder="Ask your question">
+        <button type="submit">Upload and Ask</button>
+    </form>
+    <div id="response"></div>
+
+    <h2>Upload PDF for Summary</h2>
+    <form id="summary-form" enctype="multipart/form-data">
+        <input type="file" id="pdf-file-input" name="pdf_file">
+        <button type="submit">Upload and Summarize</button>
+    </form>
+    <div id="summary-response"></div>
+
+    <script>
+        document.getElementById('upload-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const formData = new FormData();
+            formData.append('file', document.getElementById('file-input').files[0]);
+            formData.append('query', document.getElementById('query-input').value);
+
+            const response = await fetch('/query-document/', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            document.getElementById('response').textContent = result.response;
+        });
+
+        document.getElementById('summary-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const formData = new FormData();
+            formData.append('pdf_file', document.getElementById('pdf-file-input').files[0]);
+
+            const response = await fetch('/summarize-pdf/', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            if (response.ok) {
+                document.getElementById('summary-response').textContent = result.summary;
+            } else {
+                document.getElementById('summary-response').textContent = result.error;
+            }
+        });
+    </script>
+</body>
+</html> -->
+
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Query</title>
+    <link rel="stylesheet" href="{% static 'myapp/styles.css' %}">
+</head>
+<body>
+    <h1>Upload Document and Ask Questions</h1>
+    <form id="upload-form" enctype="multipart/form-data">
+        <input type="file" id="file-input" name="file" required>
+        <input type="text" id="user-id-input" name="user_id" placeholder="Enter your User ID" required>
+        <button type="submit">Upload and Process</button>
+    </form>
+    <div id="response"></div>
+
+    <h2>Upload PDF for Summary</h2>
+    <form id="summary-form" enctype="multipart/form-data">
+        <input type="file" id="pdf-file-input" name="pdf_file" required>
+        <button type="submit">Get Summary</button>
+    </form>
+    <div id="summary-response"></div>
+
+    <h2>Chat by ID and Prompt</h2>
+    <form id="chat-form">
+        <input type="text" id="chat-user-id-input" name="user_id" placeholder="Enter your User ID" required>
+        <input type="text" id="prompt-input" name="prompt" placeholder="Enter your prompt" required>
+        <button type="button" id="chat-button">Chat</button>
+    </form>
+    <div id="chat-response"></div>
+
+    <h2>Get Conversation History</h2>
+    <form id="history-form">
+        <input type="text" id="history-user-id-input" name="user_id" placeholder="Enter your User ID" required>
+        <button type="button" id="history-button">Get History</button>
+    </form>
+    <div id="history-response"></div>
+
+    <script>
+        document.getElementById('upload-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const formData = new FormData();
+            formData.append('file', document.getElementById('file-input').files[0]);
+            formData.append('user_id', document.getElementById('user-id-input').value);
+
+            try {
+                const response = await fetch('/query-document/', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    document.getElementById('response').textContent = 'Embeddings stored successfully';
+                } else {
+                    document.getElementById('response').textContent = result.error;
+                }
+            } catch (error) {
+                document.getElementById('response').textContent = 'An error occurred: ' + error.message;
+            }
+        });
+
+        document.getElementById('summary-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const formData = new FormData();
+            formData.append('pdf_file', document.getElementById('pdf-file-input').files[0]);
+
+            try {
+                const response = await fetch('/summarize-pdf/', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    document.getElementById('summary-response').textContent = result.summary;
+                } else {
+                    document.getElementById('summary-response').textContent = result.error;
+                }
+            } catch (error) {
+                document.getElementById('summary-response').textContent = 'An error occurred: ' + error.message;
+            }
+        });
+
+        document.getElementById('chat-button').addEventListener('click', async function(event) {
+        event.preventDefault();
+        const user_id = document.getElementById('chat-user-id-input').value;
+        const prompt = document.getElementById('prompt-input').value;
+
+        try {
+            const response = await fetch(`/chat-query/${user_id}/`, {  // Include user_id in the URL
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ query: prompt, user_id: user_id })
+            });
+            const result = await response.json();
+            if (response.ok) {
+                document.getElementById('chat-response').textContent = result.response;
+            } else {
+                document.getElementById('chat-response').textContent = result.error;
+            }
+        } catch (error) {
+            document.getElementById('chat-response').textContent = 'An error occurred: ' + error.message;
+        }
+    });
+
+
+        document.getElementById('history-button').addEventListener('click', async function(event) {
+            event.preventDefault();
+            const user_id = document.getElementById('history-user-id-input').value;
+
+            try {
+                const response = await fetch(`/history/${user_id}/`, {
+                    method: 'GET'
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    document.getElementById('history-response').textContent = JSON.stringify(result.conversation_history, null, 2);
+                } else {
+                    document.getElementById('history-response').textContent = result.error;
+                }
+            } catch (error) {
+                document.getElementById('history-response').textContent = 'An error occurred: ' + error.message;
+            }
+        });
+    </script>
+</body>
+</html>
